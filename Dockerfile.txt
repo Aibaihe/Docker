@@ -1,7 +1,39 @@
-FROM mcr.microsoft.com/windows:20H2-KB5016616
+# Use a Windows Server Core base image
+FROM mcr.microsoft.com/windows/servercore:ltsc2019
 
-Dism /online /Enable-Feature /All
+# Install chocolatey (Package manager for Windows)
+SHELL ["powershell", "-Command", "$ErrorActionPreference = 'Stop'; $ProgressPreference = 'SilentlyContinue';"]
 
-LABEL maintainer="aibaihe95@hotmail.com"
+RUN Set-ExecutionPolicy Bypass -Scope Process -Force; \
+    iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 
-CMD [ "cmd" ]
+# Install packages using chocolatey
+RUN choco install -y qemu-x64 xz dbus curl firefox git tightvncserver wget
+
+# Download noVNC
+ADD https://github.com/novnc/noVNC/archive/refs/tags/v1.2.0.tar.gz C:\\v1.2.0.tar.gz
+
+# Extract noVNC
+RUN Expand-Archive -Path C:\\v1.2.0.tar.gz -DestinationPath C:\\
+
+# Create VNC password
+RUN mkdir C:\\Users\\ContainerUser\\.vnc
+RUN 'luo' | Out-File -Encoding Ascii C:\\Users\\ContainerUser\\.vnc\\passwd
+
+# Set environment variables
+ENV USER ContainerUser
+ENV VNCPASS luo
+ENV VNCPATH C:\\Users\\$env:USER\\.vnc
+
+# Create the script file
+RUN New-Item -ItemType File -Path C:\\luo.ps1
+RUN Add-Content -Path C:\\luo.ps1 -Value 'whoami'
+RUN Add-Content -Path C:\\luo.ps1 -Value 'vncserver.exe :1 -geometry 1280x800 -depth 16'
+RUN Add-Content -Path C:\\luo.ps1 -Value 'cd C:\\noVNC-1.2.0'
+RUN Add-Content -Path C:\\luo.ps1 -Value '.\\utils\\launch.bat --vnc localhost:5901 --listen 8900'
+
+# Expose ports
+EXPOSE 5901 8900
+
+# Start the VNC server and noVNC
+CMD powershell -ExecutionPolicy Bypass -File C:\\luo.ps1

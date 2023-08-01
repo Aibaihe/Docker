@@ -1,4 +1,4 @@
-FROM mcr.microsoft.com/windows/servercore:ltsc2019
+FROM docker pull mcr.microsoft.com/windows:20H2-KB5016616
 
 LABEL maintainer="aibaihe95@hotmail.com"
 

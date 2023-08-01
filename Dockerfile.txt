@@ -1,5 +1,7 @@
 FROM docker pull mcr.microsoft.com/windows:20H2-KB5016616
 
+Dism /online /Enable-Feature /All
+
 LABEL maintainer="aibaihe95@hotmail.com"
 
 CMD [ "cmd" ]
